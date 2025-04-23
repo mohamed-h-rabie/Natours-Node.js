@@ -1,0 +1,20 @@
+{
+  "name": "natrous-project",
+  "version": "1.0.0",
+  "description": "Learing Node.js Express.js and MongoDB",
+  "homepage": "https://github.com/mohamed-h-rabie/Natrous-Node.js#readme",
+  "bugs": {
+    "url": "https://github.com/mohamed-h-rabie/Natrous-Node.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohamed-h-rabie/Natrous-Node.js.git"
+  },
+  "license": "ISC",
+  "author": "Mohamed Rabie",
+  "type": "commonjs",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
