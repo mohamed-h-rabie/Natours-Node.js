@@ -51,10 +51,35 @@ app.post(toursRoute, (req, res) => {
 });
 
 app.patch(`${toursRoute}/:id`, (req, res) => {
+  if (req.params.id > tours.length - 1) {
+    return res.status(404).json({
+      status: 'failed',
+      message: 'Invailed ID',
+    });
+  }
   res.status(200).json({
     status: 'success',
     message: `tour num ${req.params.id} is updated`,
   });
+});
+app.delete(`${toursRoute}/:id`, (req, res) => {
+  if (req.params.id > tours.length - 1) {
+    return res.status(404).json({
+      status: 'failed',
+      message: 'Invailed ID',
+    });
+  }
+  const updatedTours = tours.filter((tour) => +tour.id !== +req.params.id);
+  fs.writeFile(
+    `${__dirname}/dev-data/data/tours-simple.json`,
+    JSON.stringify(updatedTours),
+    (err) => {
+      res.status(200).json({
+        status: 'success',
+        message: `tour num ${req.params.id} is deleted`,
+      });
+    }
+  );
 });
 
 // app.get('/', (req, res) => {
