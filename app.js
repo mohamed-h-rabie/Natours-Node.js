@@ -92,13 +92,10 @@ const deleteTour = (req, res) => {
     }
   );
 };
-
-app.route(toursRoute).get(getAllTours).post(postTour);
-app
-  .route(`${toursRoute}/:id`)
-  .get(getTour)
-  .patch(updateTour)
-  .delete(deleteTour);
+const tourRouter = express.Router();
+app.use('/api/v1/tours', tourRouter);
+tourRouter.route('/').get(getAllTours).post(postTour);
+tourRouter.route(`/:id`).get(getTour).patch(updateTour).delete(deleteTour);
 // app.get(toursRoute, getAllTours);
 // app.post(toursRoute, postTour);
 // app.get(`${toursRoute}/:id`, getTour);
