@@ -20,7 +20,7 @@ app.get(`${toursRoute}/:id`, (req, res) => {
   const id = req.params.id;
   const tour = tours.find((tour) => +tour.id === +id);
   if (!tour) {
-   return  res.status(404).json({
+    return res.status(404).json({
       status: 'failed',
       message: 'Invailed ID',
     });
@@ -48,6 +48,13 @@ app.post(toursRoute, (req, res) => {
       });
     }
   );
+});
+
+app.patch(`${toursRoute}/:id`, (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: `tour num ${req.params.id} is updated`,
+  });
 });
 
 // app.get('/', (req, res) => {
