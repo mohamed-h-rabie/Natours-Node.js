@@ -8,9 +8,17 @@ const toursRoute = '/api/v1/tours';
 const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
 );
+app.use((req, res, next) => {
+  console.log('hello');
+
+  req.respondTime = new Date().toISOString();
+  next();
+});
 const getAllTours = (req, res) => {
   res.status(200).json({
     status: 'success',
+    requestTime: req.respondTime,
+
     results: tours.length,
     data: { tours },
   });
@@ -80,12 +88,6 @@ const deleteTour = (req, res) => {
     }
   );
 };
-// app.get(toursRoute, getAllTours);
-// app.post(toursRoute, postTour);
-// app.get(`${toursRoute}/:id`, getTour);
-
-// app.patch(`${toursRoute}/:id`, updateTour);
-// app.delete(`${toursRoute}/:id`, deleteTour);
 
 app.route(toursRoute).get(getAllTours).post(postTour);
 app
@@ -93,14 +95,14 @@ app
   .get(getTour)
   .patch(updateTour)
   .delete(deleteTour);
+// app.get(toursRoute, getAllTours);
+// app.post(toursRoute, postTour);
+// app.get(`${toursRoute}/:id`, getTour);
 
-// app.get('/', (req, res) => {
-//   res.status(200).json({
-//     message: 'hello from serverside',
-//     app: 'Natrous app',
-//   });
-// });
+// app.patch(`${toursRoute}/:id`, updateTour);
+// app.delete(`${toursRoute}/:id`, deleteTour);
 
 app.listen(port, () => {
   console.log(`server is running in port ${port}`);
+  console.log(`Access the app at http://192.168.1.2:${port}`);
 });
