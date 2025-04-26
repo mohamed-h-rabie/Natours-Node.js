@@ -15,7 +15,8 @@
   "type": "commonjs",
   "main": "app.js",
   "scripts": {
-    "test": "nodemon server.js"
+    "test": "nodemon server.js",
+    "start": "nodemon server.js"
   },
   "dependencies": {
     "body-parser": "^2.2.0",
