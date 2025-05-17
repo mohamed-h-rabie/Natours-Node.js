@@ -12,5 +12,5 @@ mongoose.connect(DB).then(console.log('connectedd successfully with DB'));
 
 app.listen(port, () => {
   console.log(`server is running in port ${port}`);
-  // console.log(`Access the app at http://192.168.1.2:${port}`);
+  
 });

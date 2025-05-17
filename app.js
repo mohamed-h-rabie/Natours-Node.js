@@ -6,14 +6,17 @@ const tourRouter = require('./Routes/tourRoutes');
 const userRouter = require('./Routes/userRoutes');
 //Middlewares
 var morgan = require('morgan');
+const qs = require('qs');
+
 // Using Middleware
 app.use(express.json());
+// Set a custom query parser using qs
+app.set('query parser', (str) => qs.parse(str));
 if (process.env.NODE_ENV === 'development') {
- app.use(morgan('dev'));
+  app.use(morgan('dev'));
 }
 app.use(express.static(`${__dirname}/public`));
 app.use((req, res, next) => {
-  console.log('hello');
   req.respondTime = new Date().toISOString();
   next();
 });
