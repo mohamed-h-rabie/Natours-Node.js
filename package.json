@@ -1,32 +1,22 @@
 {
-  "name": "natrous-project",
+  "name": "natrous",
   "version": "1.0.0",
-  "description": "Learing Node.js Express.js and MongoDB",
-  "homepage": "https://github.com/mohamed-h-rabie/Natrous-Node.js#readme",
-  "bugs": {
-    "url": "https://github.com/mohamed-h-rabie/Natrous-Node.js/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mohamed-h-rabie/Natrous-Node.js.git"
-  },
+  "description": "",
   "license": "ISC",
-  "author": "Mohamed Rabie",
+  "author": "",
   "type": "commonjs",
-  "main": "app.js",
+  "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js",
-    "start:prod": "set NODE_ENV=production && nodemon server.js"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
   },
   "dependencies": {
-    "body-parser": "^2.2.0",
     "dotenv": "^16.5.0",
-    "eslint": "^9.25.1",
     "express": "^5.1.0",
-    "mongodb": "^6.16.0",
-    "mongoose": "^8.14.1",
+    "mongoose": "^8.15.1",
     "morgan": "^1.10.0",
-    "prettier": "^3.5.3",
-    "qs": "^6.14.0"
+    "nodemon": "^3.1.10",
+    "slugify": "^1.6.6",
+    "zod": "^3.25.64"
   }
 }
