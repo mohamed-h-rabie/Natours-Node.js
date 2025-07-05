@@ -8,14 +8,19 @@ const {
   updateTour,
   deleteTour,
   toursStats,
-  monthlyPlan
+  monthlyPlan,
 } = require('../controllers/tourController');
+const { protectRoute, restrictTo } = require('../controllers/authController');
 
 router.route('/topFiveTours').get(aliasTopTours, getAllTours);
 router.route('/tours-stats').get(toursStats);
 router.route('/monthlyPlan/:year').get(monthlyPlan);
 
-router.route('/').get(getAllTours).post(createTour);
-router.route('/:id').get(getTour).patch(updateTour).delete(deleteTour);
+router.route('/').get(protectRoute, getAllTours).post(createTour);
+router
+  .route('/:id')
+  .get(getTour)
+  .patch(updateTour)
+  .delete(protectRoute, restrictTo('admin'), deleteTour);
 
 module.exports = router;
