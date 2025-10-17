@@ -8,19 +8,32 @@ const {
   resetPassword,
   updatePassword,
   protectRoute,
+  updateMe,
+  deleteMe,
+  restrictTo,
 } = require('../controllers/authController');
 const {
-  updateMe,
+  // updateMe,
   getUsers,
-  deleteMe,
+  // deleteMe,
+  deleteUser,
+  getMe,
+  getUser,
 } = require('../controllers/userController');
 
-router.route('/').get(getUsers);
 router.route('/signUp').post(signUp);
 router.route('/signIn').post(signIn);
 router.route('/forgetPassword').post(forgetPassword);
 router.route('/resetPassword/:token').post(resetPassword);
-router.patch('/updatePassword', protectRoute, updatePassword);
-router.patch('/updateMe', protectRoute, updateMe);
-router.patch('/deleteMe', protectRoute, deleteMe);
+///////////////////////////////////////////////////////////////////
+router.use(protectRoute);
+router.route('/').get(getUsers);
+router.route('/:id').delete(deleteUser);
+router.route('/getMe').get(protectRoute, getMe, getUser);
+
+// ------------------------------------------------
+
+router.route('/updatePassword').patch(updatePassword);
+router.patch('/updateMe', updateMe);
+router.patch('/deleteMe', deleteMe);
 module.exports = router;

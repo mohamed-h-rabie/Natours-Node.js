@@ -1,6 +1,6 @@
 const User = require('../models/userModel');
 const AppError = require('../utils/AppError');
-
+const { deleteOne, getOne } = require('../controllers/handleFactory');
 const cathcAsync = (fn) => {
   return (req, res, next) => {
     fn(req, res, next).catch((err) => next(err));
@@ -15,6 +15,20 @@ const filteredObj = (obj, ...allowedFieldToUpdate) => {
   });
   return newObj;
 };
+exports.getUser = getOne(User);
+
+exports.getMe = (req, res, next) => {
+  console.log(req.user.id);
+
+  if (!req.user) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
+
+  req.params.id = req.user.id;
+  console.log('hello');
+  next();
+};
+
 exports.updateMe = cathcAsync(async (req, res, next) => {
   if (req.body.password || req.body.confirmPassword) {
     return next(
@@ -39,12 +53,13 @@ exports.updateMe = cathcAsync(async (req, res, next) => {
   });
 });
 exports.deleteMe = cathcAsync(async (req, res, next) => {
-  await User.findByIdAndUpdate(req.user.id, { active: false });
+  await User.findByIdAndDelete(req.user.id, { active: false });
   res.status(201).json({
     message: 'success',
     data: {},
   });
 });
+exports.deleteUser = deleteOne(User);
 exports.getUsers = cathcAsync(async (req, res, next) => {
   const users = await User.find();
   res.status(201).json({

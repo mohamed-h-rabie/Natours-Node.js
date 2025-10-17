@@ -48,29 +48,43 @@ const userSchema = new mongoose.Schema({
 
 userSchema.pre('save', async function (next) {
   const user = this;
-  if (!user.isModified('password')) return next();
-
+  // 1️⃣ Only hash password if it was modified (or if it's new)
+  if (!this.isModified('password')) return next();
   user.password = await bcrypt.hash(user.password, 12);
   user.confirmPassword = undefined;
   next();
 });
+
+userSchema.pre('save', function (next) {
+  const user = this;
+  if (!user.isModified('password') || user.isNew) return next();
+  user.changePasswordAt = Date.now() - 1000;
+  next();
+});
+////////////////////////////////////////////////
 userSchema.pre(/^find/, function (next) {
   const user = this;
   user.find({ active: { $ne: false } });
   next();
 });
+////////////////////////////////////////////////
 userSchema.methods.correctPassword = async function (
   canidatePassword,
   userPassword
 ) {
   return await bcrypt.compare(userPassword, canidatePassword);
 };
+////////////////////////////////////////////////
 userSchema.methods.changePasswordAfter = function (jwtIAT) {
   const user = this;
-  const time = Math.floor(user.changePasswordAt / 1000);
-  console.log(time, jwtIAT);
+  if (user.changePasswordAt) {
+    console.log(user.changePasswordAt, jwtIAT);
 
-  if (time > jwtIAT) return true;
+    const time = Math.floor(user.changePasswordAt / 1000);
+    console.log(time, jwtIAT);
+    if (time > jwtIAT) return true;
+  }
+
   return false;
 };
 
@@ -80,10 +94,9 @@ userSchema.methods.createPasswordResetToken = function () {
     .createHash('sha256')
     .update(resetToken)
     .digest('hex');
-  this.passwordResetExpires = Date.now() + 15 * 60 * 1000;
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
   return resetToken;
 };
-
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;

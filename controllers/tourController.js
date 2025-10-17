@@ -1,6 +1,11 @@
-// const Tour = require('../models/tourModel');
 const Tour = require('../models/tourModel');
-const APIFeatures = require('../utils/ApiFeatures');
+const {
+  deleteOne,
+  updateOne,
+  createOne,
+  getOne,
+  getAll,
+} = require('../controllers/handleFactory');
 const AppError = require('../utils/AppError');
 const cathcAsync = (fn) => {
   return (req, res, next) => {
@@ -13,84 +18,109 @@ exports.aliasTopTours = (req, res, next) => {
 
   next();
 };
+// exports.getAllTours = cathcAsync(async (req, res, next) => {
+//   // const query = Tour.find();
+//   const queryObject = { ...req.query };
+//   const excludedQueries = ['page', 'sort', 'limit', 'fields'];
+//   excludedQueries.forEach((query) => delete queryObject[query]);
+//   let queryString = JSON.stringify(queryObject);
+//   queryString = queryString.replace(
+//     /\b(gte|gt|lte|lt)\b/g,
+//     (match) => `$${match}`
+//   );
+//   console.log(queryObject.sort);
+//   let query = Tour.find(JSON.parse(queryString));
+//   if (req.query.sort) {
+//     const sortBy = req.query.sort.split(',').join(' ');
+//     query = query.sort(sortBy);
+//   } else {
+//     query = query.sort('-createdAt');
+//   }
+//   if (req.query.fields) {
+//     const fields = req.query.fields.split(',').join(' ');
+//     query = query.select(fields);
+//   } else {
+//     query = query.select('-__v');
+//   }
+//   ///////////////////
+//   const limit = req.query.limit || 100;
+//   const page = req.query.page || 1;
+//   const skip = (page - 1) * limit;
+//   query = query.limit(limit).skip(skip);
+//   if (req.query.page) {
+//     const numberOfTours = await Tour.countDocuments();
+//     if (skip > numberOfTours) throw new Error("this page doesn't exisit");
+//   }
+//   const tours = await query;
+//   // .limit(limit)
+//   // .skip(skip);
 
-exports.getAllTours = cathcAsync(async (req, res, next) => {
-  const features = new APIFeatures(Tour, req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .pagination();
+//   res.status(200).json({
+//     status: 'successed',
+//     length: tours.length,
+//     time: req.respondTime,
+//     data: {
+//       tours,
+//     },
+//   });
+// });
+exports.getAllTours = getAll(Tour);
 
-  const tours = await features.query;
-
-  res.status(200).json({
-    status: 'successed',
-    length: tours.length,
-    time: req.respondTime,
-    data: {
-      tours,
-    },
-  });
-});
-
-exports.getTour = cathcAsync(async (req, res, next) => {
-  const id = req.params.id;
-  const tour = await Tour.findById(id);
-  if (!tour) {
-    return next(new AppError(`No tour founded with that ID ${id}`, 404));
+exports.getTour = getOne(Tour, { path: 'reviews' });
+exports.createTour = createOne(Tour);
+exports.deleteTour = deleteOne(Tour);
+exports.updateTour = updateOne(Tour);
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+exports.getTourWithin = cathcAsync(async (req, res) => {
+  const { distance, latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+  const radius = unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
+  console.log(radius, lat, lng);
+  if (!lat || !lng) {
+    new AppError('You should have a lat and lng');
   }
+  const tours = await Tour.find({
+    startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } },
+  });
+  console.log(tours);
+
   res.status(200).json({
     status: 'successed',
-    time: req.respondTime,
-    data: {
-      tour,
-    },
+    data: { tours },
   });
 });
-
-exports.createTour = cathcAsync(async (req, res) => {
-  const tour = await Tour.create(req.body);
-  res.status(200).json({
-    status: 'successed',
-    time: req.respondTime,
-    data: {
-      tour,
-    },
-  });
-});
-exports.deleteTour = cathcAsync(async (req, res, next) => {
-  const id = req.params.id;
-
-  const tour = await Tour.findByIdAndDelete(id);
-  if (!tour) {
-    return next(new AppError(`No tour founded with that ID ${id}`, 404));
+exports.getNearLocations = cathcAsync(async (req, res) => {
+  const { latlng, unit } = req.params;
+  const [lat, lng] = latlng.split(',');
+  const multiplier = unit === 'mi' ? 0.000621 : 0.001;
+  if (!lat || !lng) {
+    new AppError('You should have a lat and lng');
   }
+  const tours = await Tour.aggregate([
+    {
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [lng*1, lat*1],
+        },
+        distanceField: 'distance',
+        distanceMultiplier: multiplier,
+      },
+    },  {
+      $project: {
+        name: 1,
+        distance: 1,
+      },
+    },
+  
+  ]);
+  console.log(tours);
+
   res.status(200).json({
     status: 'successed',
-    time: req.respondTime,
-    data: {
-      tour,
-    },
+    data: { tours },
   });
 });
-exports.updateTour = cathcAsync(async (req, res , next) => {
-  const id = req.params.id;
-
-  const body = req.body;
-
-  const tour = await Tour.findByIdAndUpdate(id, body);
-  if (!tour) {
-    return next(new AppError(`No tour founded with that ID ${id}`, 404));
-  }
-  res.status(200).json({
-    status: 'successed',
-    time: req.respondTime,
-    data: {
-      tour,
-    },
-  });
-});
-
 exports.toursStats = cathcAsync(async (req, res) => {
   const toursStats = await Tour.aggregate([
     {
@@ -118,6 +148,200 @@ exports.toursStats = cathcAsync(async (req, res) => {
     time: req.respondTime,
     data: {
       toursStats,
+    },
+  });
+});
+exports.countOfToursMedium = cathcAsync(async (req, res) => {
+  const count = await Tour.aggregate([
+    { $group: { _id: '$difficulty', countOfTours: { $sum: 1 } } },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      count,
+    },
+  });
+});
+exports.ratingsAverageOfTours = cathcAsync(async (req, res) => {
+  const avg = await Tour.aggregate([
+    {
+      $group: {
+        _id: null,
+        rateAvg: { $avg: '$ratingsAverage' },
+      },
+    },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      avg,
+    },
+  });
+});
+exports.minMaxPrice = cathcAsync(async (req, res) => {
+  const minMaxPrice = await Tour.aggregate([
+    {
+      $group: {
+        _id: null,
+        minPrice: { $min: '$price' },
+        maxPrice: { $max: '$price' },
+      },
+    },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      minMaxPrice,
+    },
+  });
+});
+exports.AveragePricePerDifficulty = cathcAsync(async (req, res) => {
+  const AveragePricePerDifficulty = await Tour.aggregate([
+    {
+      $group: {
+        _id: '$difficulty',
+        minPrice: { $min: '$price' },
+        maxPrice: { $max: '$price' },
+        avgPrice: { $avg: '$price' },
+      },
+    },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      AveragePricePerDifficulty,
+    },
+  });
+});
+exports.Statsonlyfortourswithrating = cathcAsync(async (req, res) => {
+  const Statsonlyfortourswithrating = await Tour.aggregate([
+    { $match: { ratingsAverage: { $gte: 4.5 } } },
+    {
+      $group: {
+        _id: null,
+        numTours: { $sum: 1 },
+        avgPrice: { $avg: '$price' },
+        avgRating: { $avg: '$ratingsAverage' },
+      },
+    },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      Statsonlyfortourswithrating,
+    },
+  });
+});
+exports.Sortdifficultiesbyaverageprice = cathcAsync(async (req, res) => {
+  const Sortdifficultiesbyaverageprice = await Tour.aggregate([
+    {
+      $group: {
+        _id: '$difficulty',
+        avgPrice: { $avg: '$price' },
+        avgRating: { $avg: '$ratingsAverage' },
+      },
+    },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      Sortdifficultiesbyaverageprice,
+    },
+  });
+});
+exports.Ignoresecrettours = cathcAsync(async (req, res) => {
+  const Ignoresecrettours = await Tour.aggregate([
+    {
+      $match: { secreteTour: false },
+    },
+    {
+      $group: {
+        _id: '$difficulty',
+        numTours: { $sum: 1 },
+      },
+    },
+    {
+      $sort: { avgPrice: -1 },
+    },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      Ignoresecrettours,
+    },
+  });
+});
+exports.Grouptoursbydurationbuckets = cathcAsync(async (req, res) => {
+  const Grouptoursbydurationbuckets = await Tour.aggregate([
+    {
+      $bucket: {
+        groupBy: '$duration',
+        boundaries: [0, 2, 4, 6, 10],
+        default: 'Other', // anything >= 100 days
+
+        output: {
+          numTours: { $sum: 1 },
+          avgPrice: { $avg: '$price' },
+        },
+      },
+    },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      Grouptoursbydurationbuckets,
+    },
+  });
+});
+exports.Advancedstatsperdifficulty = cathcAsync(async (req, res) => {
+  const Advancedstatsperdifficulty = await Tour.aggregate([
+    {
+      $group: {
+        _id: '$difficulty',
+        numTours: { $sum: 1 },
+        avgPrice: { $avg: '$price' },
+        avgRating: { $avg: '$ratingsAverage' },
+        totalRevenue: { $sum: { $multiply: ['$price', '$maxGroupSize'] } },
+      },
+    },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      Advancedstatsperdifficulty,
+    },
+  });
+});
+exports.Topmostexpensivetours = cathcAsync(async (req, res) => {
+  const Topmostexpensivetours = await Tour.aggregate([
+    {
+      $project: {
+        _id: 0,
+        name: 1,
+        price: 1,
+      },
+    },
+    {
+      $sort: { price: 1 },
+    },
+    {
+      $limit: 5,
+    },
+  ]);
+  res.status(200).json({
+    status: 'successed',
+    time: req.respondTime,
+    data: {
+      Topmostexpensivetours,
     },
   });
 });

@@ -1,4 +1,4 @@
- class APIFeatures {
+class APIFeatures {
   constructor(query, queryString) {
     this.query = query;
     this.queryString = queryString;
@@ -36,6 +36,7 @@
     //Linit Fields
     if (this.queryString.fields) {
       const fields = this.queryString.fields.split(',').join(' ');
+      console.log(fields);
 
       this.query = this.query.select(fields);
     } else {
@@ -52,4 +53,4 @@
   }
 }
 
-module.exports = APIFeatures
+module.exports = APIFeatures;
