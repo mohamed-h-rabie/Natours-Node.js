@@ -3,8 +3,47 @@ const jwt = require('jsonwebtoken');
 const AppError = require('../utils/AppError');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
-const e = require('express');
 
+const path = require('path'); // ✅ Add this line
+
+const multer = require('multer');
+const sharp = require('sharp');
+const { emailSender, templates } = require('../utils/email');
+// const multerStorage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, path.join(__dirname, '../public/img/users'));
+//   },
+//   filename: (req, file, cb) => {
+//     const ext = file.mimetype.split('/')[1];
+//     cb(null, `user-${req.user.id}-${Date.now()}.${ext}`);
+//   },
+// });
+const multerStorage = multer.memoryStorage();
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Not an image , please upload an image', 400), false);
+  }
+};
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+exports.uploadUserPhoto = upload.single('photo');
+
+exports.resizePhoto = async (req, res, next) => {
+  if (!req.file) return next();
+  req.file.filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+  // console.log(path.join(__dirname, `../public/img/users/${req.file.filename}`) ,s);
+
+  await sharp(req.file.buffer)
+    .resize(500, 500)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(path.join(__dirname, `../public/img/users/${req.file.filename}`));
+  next();
+};
 const cathcAsync = (fn) => {
   return (req, res, next) => {
     fn(req, res, next).catch((err) => next(err));
@@ -37,6 +76,12 @@ exports.signUp = cathcAsync(async (req, res, next) => {
   const user = await User.create({ name, email, password, confirmPassword });
   const id = user.id;
   const token = generateToken(id);
+
+  await emailSender({
+    to: 'hossamhabdalla3@gmail.com',
+    subject: 'Successfully Registered',
+    html: templates.welcome(req.body.name),
+  });
   res.status(200).json({
     message: 'success',
     token,
@@ -57,7 +102,7 @@ exports.signIn = cathcAsync(async (req, res, next) => {
   // 2// Ensure that user write a his correct (email and password)
   const user = await User.findOne({ email }).select('+password');
   console.log(user);
-  
+
   // const correctPassword =
   // console.log(user, correctPassword);
 
@@ -135,20 +180,27 @@ exports.forgetPassword = cathcAsync(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
 
   const resetUrl = `http://127.0.0.1:3000/api/v1/users/resetPassword/${resetToken}`;
-  const transporter = nodemailer.createTransport({
-    service: 'Gmail',
-    auth: {
-      user: 'mohamed.hassa3nnn@gmail.com',
-      pass: 'ihtu cfey zspv aoui',
-    },
-  });
-  await transporter.sendMail({
+  // const transporter = nodemailer.createTransport({
+  //   service: 'Gmail',
+  //   auth: {
+  //     user: 'mohamed.hassa3nnn@gmail.com',
+  //     pass: 'ihtu cfey zspv aoui',
+  //   },
+  // });
+  // await transporter.sendMail({
+  //   to: 'hossamhabdalla3@gmail.com',
+  //   subject: 'Password Reset',
+  //   html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. It expires in 15 mins.</p>`,
+  // });
+  await emailSender({
     to: 'hossamhabdalla3@gmail.com',
-    subject: 'Password Reset',
-    html: `<p>Click <a href="${resetUrl}">here</a> to reset your password. It expires in 15 mins.</p>`,
+    subject: 'Reset Your Password',
+    html: templates.resetPassword(resetUrl),
   });
-  res.status(200).json({ message: 'Reset link sent' });
-
+  res.status(200).json({
+    status: 'success',
+    message: 'Password reset link sent to your email!',
+  });
   // next();
 });
 exports.resetPassword = cathcAsync(async (req, res, next) => {
@@ -204,11 +256,14 @@ const filteredObj = (body, ...filterdData) => {
   return obj;
 };
 exports.updateMe = cathcAsync(async (req, res, next) => {
+  console.log(req.file);
+  console.log(req.body);
+
   if (req.body.password || req.body.confirmPassword)
     return next(new AppError('this route is not for update password', 400));
   const filteredBody = filteredObj(req.body, 'name', 'email');
   console.log(filteredBody);
-
+  if (req.file) filteredBody.photo = req.file.filename;
   const updatedUser = await User.findByIdAndUpdate(req.user._id, filteredBody, {
     runValidators: true,
     new: true,

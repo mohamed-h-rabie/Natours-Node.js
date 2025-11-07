@@ -12,7 +12,9 @@ const {
   monthlyPlan,
   minMaxPrice,
   getTourWithin,
-  getNearLocations
+  getNearLocations,
+  uploadTourImages,
+  resizeImageTours,
 } = require('../controllers/tourController');
 router.use('/:tourId/reviews', reviewRoute);
 
@@ -22,9 +24,7 @@ const { protectRoute, restrictTo } = require('../controllers/authController');
 router
   .route('/toursWithin/:distance/center/:latlng/unit/:unit')
   .get(getTourWithin);
-router
-  .route('/distances/:latlng/unit/:unit')
-  .get(getNearLocations);
+router.route('/distances/:latlng/unit/:unit').get(getNearLocations);
 router.route('/topFiveTours').get(aliasTopTours, getAllTours);
 
 router.route('/minMaxPrice').get(aliasTopTours, minMaxPrice);
@@ -36,14 +36,14 @@ router
 router
   .route('/')
   .get(getAllTours)
-  .post(protectRoute, restrictTo('admin', 'lead-guide'), createTour);
+  .post(protectRoute, uploadTourImages, resizeImageTours, createTour);
 
 router
   .route('/:id')
   .get(getTour)
   .patch(protectRoute, restrictTo('admin', 'lead-guide'), updateTour)
   .delete(protectRoute, restrictTo('admin', 'lead-guide'), deleteTour);
-3;
+;
 
 module.exports = router;
 // router.route('/countOfToursMedium').get(aliasTopTours, countOfToursMedium);

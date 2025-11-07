@@ -11,6 +11,8 @@ const {
   updateMe,
   deleteMe,
   restrictTo,
+  uploadUserPhoto,
+  resizePhoto,
 } = require('../controllers/authController');
 const {
   // updateMe,
@@ -34,6 +36,6 @@ router.route('/getMe').get(protectRoute, getMe, getUser);
 // ------------------------------------------------
 
 router.route('/updatePassword').patch(updatePassword);
-router.patch('/updateMe', updateMe);
+router.patch('/updateMe', uploadUserPhoto, resizePhoto, updateMe);
 router.patch('/deleteMe', deleteMe);
 module.exports = router;

@@ -1,3 +1,4 @@
+const slugify = require('slugify');
 const Tour = require('../models/tourModel');
 const {
   deleteOne,
@@ -6,7 +7,10 @@ const {
   getOne,
   getAll,
 } = require('../controllers/handleFactory');
+const path = require('path'); // ✅ Add this line
+const multer = require('multer');
 const AppError = require('../utils/AppError');
+const sharp = require('sharp');
 const cathcAsync = (fn) => {
   return (req, res, next) => {
     fn(req, res, next).catch((err) => next(err));
@@ -15,6 +19,70 @@ const cathcAsync = (fn) => {
 exports.aliasTopTours = (req, res, next) => {
   req.url =
     '?limit=5&sort=-ratingsAverage,price&fields=name,price,ratingsAverage';
+
+  next();
+};
+
+const multerStorage = multer.memoryStorage();
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image')) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Not an image , please upload an image', 400), false);
+  }
+};
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+
+exports.uploadTourImages = upload.fields([
+  {
+    name: 'imageCover',
+    maxCount: 1,
+  },
+  {
+    name: 'images',
+    maxCount: 3,
+  },
+]);
+
+exports.resizeImageTours = async (req, res, next) => {
+  // console.log(req.files);
+  if (!req.files.imageCover || !req.files.images) return next();
+  const images = req.files.images;
+  const imageCover = req.files.imageCover[0];
+  const tourName = slugify(req.body.name, { lower: true }); // <--- use tour name
+
+  //
+  req.body.imageCover = `tour-${tourName}-${Date.now()}-cover.jpeg`;
+  await sharp(imageCover.buffer)
+    .resize(2000, 1333)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(path.join(__dirname, `../public/img/tours/${req.body.imageCover}`));
+  //
+  req.body.images = [];
+  await Promise.all([
+    await images.map(async (image, i) => {
+      const fileName = `tour-${tourName}-${Date.now()}-${i + 1}-image.jpeg`;
+      sharp(image.buffer)
+        .resize(500, 500)
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 })
+        .toFile(path.join(__dirname, `../public/img/tours/${fileName}`));
+      req.body.images.push(fileName);
+    }),
+  ]);
+  // images.map((image) =>
+  //   sharp(image.buffer)
+  //     .resize(500, 500)
+  //     .toFormat('jpeg')
+  //     .jpeg({ quality: 90 })
+  //     .toFile(path.join(__dirname, `../public/img/tours/${image.originalname}`))
+  // );
+  // console.log(imageCover);
+  console.log(req);
 
   next();
 };
@@ -101,18 +169,18 @@ exports.getNearLocations = cathcAsync(async (req, res) => {
       $geoNear: {
         near: {
           type: 'Point',
-          coordinates: [lng*1, lat*1],
+          coordinates: [lng * 1, lat * 1],
         },
         distanceField: 'distance',
         distanceMultiplier: multiplier,
       },
-    },  {
+    },
+    {
       $project: {
         name: 1,
         distance: 1,
       },
     },
-  
   ]);
   console.log(tours);
 
