@@ -4,6 +4,7 @@ const tourRoute = require('./routes/tourRoute');
 const userRoute = require('./routes/userRoute');
 const rateLimit = require('express-rate-limit');
 const reviewRoute = require('./routes/reviewRoute');
+const bookingRoute = require('./routes/bookingRoute');
 const AppError = require('./utils/AppError');
 const error = require('./controllers/errorController');
 const morgan = require('morgan');
@@ -39,6 +40,7 @@ app.set('query parser', (str) => qs.parse(str));
 app.use('/api/v1/tours', tourRoute);
 app.use('/api/v1/users', userRoute);
 app.use('/api/v1/reviews', reviewRoute);
+app.use('/api/v1/booking', bookingRoute);
 
 app.all('/{*any}', (req, res, next) => {
   const err = new AppError(`Can't find ${req.originalUrl} on this server`, 404);

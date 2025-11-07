@@ -1,6 +1,8 @@
 const User = require('../models/userModel');
 const AppError = require('../utils/AppError');
 const { deleteOne, getOne } = require('../controllers/handleFactory');
+const Booking = require('../models/bookingModel');
+const Tour = require('../models/tourModel');
 const cathcAsync = (fn) => {
   return (req, res, next) => {
     fn(req, res, next).catch((err) => next(err));
@@ -69,3 +71,19 @@ exports.getUsers = cathcAsync(async (req, res, next) => {
     },
   });
 });
+
+exports.getBookingsTours = async (req, res, next) => {
+  const bookings = await Booking.find({ user: req.user.id });
+
+  const toursIDS = bookings.map((booking) => booking.tour);
+console.log(toursIDS);
+
+  const tours = await Tour.find({ _id: { $in: toursIDS } });
+
+  res.status(200).json({
+    message: 'success',
+    data: {
+      tours,
+    },
+  });
+};

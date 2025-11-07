@@ -21,6 +21,7 @@ const {
   deleteUser,
   getMe,
   getUser,
+  getBookingsTours,
 } = require('../controllers/userController');
 
 router.route('/signUp').post(signUp);
@@ -32,6 +33,7 @@ router.use(protectRoute);
 router.route('/').get(getUsers);
 router.route('/:id').delete(deleteUser);
 router.route('/getMe').get(protectRoute, getMe, getUser);
+router.route('/MyBookings').get(protectRoute, getBookingsTours);
 
 // ------------------------------------------------
 
